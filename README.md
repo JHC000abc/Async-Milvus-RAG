@@ -31,3 +31,6 @@ MilvueStand 是一个基于 Python 异步架构设计的检索增强生成（RAG
 - **Milvus**: 监听 `19530` 端口
 - **Ollama**: 监听 `11434` 端口，并下载了 `embeddinggemma` 模型
 - **BGE Reranker Service**: 监听 `7997` 端口
+
+
+
