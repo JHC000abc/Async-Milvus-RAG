@@ -1,0 +1,627 @@
+创建权限组
+为简化授予权限的流程，建议将多个权限合并为一个权限组。
+特权组与特权
+特权组由多个特权组成。
+特权组示例
+如上图所示，假设需要向一个角色授予三种不同的权限。
+如果不使用特权组，则需要授予三次权限。
+如果使用特权组，则只需创建一个特权组并将三种特权添加到该特权组中，然后将该特权组授予角色 A。
+通过使用特权组，可以向角色批量授予多项特权。
+内置特权组
+为方便使用，Milvus 在 Collections、数据库和实例级别上提供了共 9 个内置特权：COLL_RO、COLL_RW、COLL_ADMIN、DB_RO、DB_RW、DB_Admin、Cluster_RO、Cluster_RW 和 Cluster_Admin。
+内置特权组的三个级别没有级联关系。在实例级别设置特权组不会自动为该实例下的所有数据库和 Collections 设置权限。数据库和集合级别的权限需要手动设置。
+下表解释了每个内置权限组所包含的权限。
+Collection 级别
+CollectionReadOnly (COLL_RO)
+：包括读取集合数据的权限
+CollectionReadWrite (COLL_RW)
+：包括读取和写入收集数据的权限
+CollectionAdmin (COLL_ADMIN)
+：包括读写收集数据和管理收集的权限。
+下表列出了集合级三个内置权限组所包含的具体权限：
+权限
+只读集合
+收集读写
+收藏管理
+查询
+✔️
+✔️
+✔️
+搜索
+✔️
+✔️
+✔️
+索引详情
+✔️
+✔️
+✔️
+获取冲洗状态
+✔️
+✔️
+✔️
+获取加载状态
+✔️
+✔️
+✔️
+获取加载进度
+✔️
+✔️
+✔️
+HasPartition
+✔️
+✔️
+✔️
+显示分区
+✔️
+✔️
+✔️
+列出别名
+✔️
+✔️
+✔️
+描述集合
+✔️
+✔️
+✔️
+描述别名
+✔️
+✔️
+✔️
+获取统计数据
+✔️
+✔️
+✔️
+创建索引
+❌
+✔️
+✔️
+删除索引
+❌
+✔️
+✔️
+创建分区
+❌
+✔️
+✔️
+删除分区
+❌
+✔️
+✔️
+加载
+❌
+✔️
+✔️
+发布
+❌
+✔️
+✔️
+插入
+❌
+✔️
+✔️
+删除
+❌
+✔️
+✔️
+增加
+❌
+✔️
+✔️
+进口
+❌
+✔️
+✔️
+同花顺
+❌
+✔️
+✔️
+压实
+❌
+✔️
+✔️
+负载平衡
+❌
+✔️
+✔️
+创建别名
+❌
+❌
+✔️
+删除别名
+❌
+❌
+✔️
+数据库级别
+只读数据库 (DB_RO)
+：包括读取数据库数据的权限
+数据库读写 (DB_RW)
+：包括读取和写入数据库数据的权限
+数据库管理 (DB_Admin)
+：包括读写数据库数据和管理数据库的权限。
+下表列出了数据库级三个内置权限组所包含的具体权限：
+权限
+只读数据库
+数据库读写
+数据库管理
+显示收藏
+✔️
+✔️
+✔️
+描述数据库
+✔️
+✔️
+✔️
+创建集合
+✔️
+✔️
+✔️
+删除收藏
+❌
+❌
+✔️
+更改数据库
+❌
+✔️
+✔️
+群集级别
+只读群集 (Cluster_RO)
+：包括读取实例数据的权限
+群集读写 (Cluster_RW)
+：包括读取和写入实例数据的权限
+ClusterAdmin (Cluster_Admin)
+：包括读写实例数据和管理实例的权限。
+下表列出了实例级三个内置特权组所包含的具体特权：
+权限
+仅群集读取
+群集读写
+群集管理员
+列出数据库
+✔️
+✔️
+✔️
+重命名收藏
+❌
+❌
+✔️
+创建所有权
+❌
+❌
+✔️
+更新用户
+❌
+❌
+✔️
+删除所有者
+❌
+❌
+✔️
+选择所有权
+✔️
+✔️
+✔️
+管理所有权
+❌
+❌
+✔️
+选择用户
+✔️
+✔️
+✔️
+备份
+❌
+❌
+✔️
+还原 RBAC
+❌
+❌
+✔️
+创建资源组
+❌
+❌
+✔️
+删除资源组
+❌
+❌
+✔️
+更新资源组
+❌
+✔️
+✔️
+描述资源组
+✔️
+✔️
+✔️
+ListResourceGroups
+✔️
+✔️
+✔️
+传输节点
+❌
+✔️
+✔️
+传输复制
+❌
+✔️
+✔️
+创建数据库
+❌
+❌
+✔️
+删除数据库
+❌
+❌
+✔️
+冲洗全部
+❌
+✔️
+✔️
+创建权限组
+❌
+❌
+✔️
+删除特权组
+❌
+❌
+✔️
+ListPrivilegeGroups
+❌
+❌
+✔️
+操作特权组
+❌
+❌
+✔️
+操作步骤
+可以创建特权组，然后向特权组添加特权。
+创建权限组
+下面的示例演示了如何创建名为
+privilege_group_1
+的特权组。
+Python
+Go
+Java
+NodeJS
+cURL
+from
+pymilvus
+import
+MilvusClient
+client.create_privilege_group(group_name=
+'privilege_group_1'
+）
+import
+"github.com/milvus-io/milvus/client/v2/milvusclient"
+err = client.CreatePrivilegeGroup(ctx, milvusclient.NewCreatePrivilegeGroupOption(
+"privilege_group_1"
+))
+if
+err !=
+nil
+{
+    fmt.Println(err.Error())
+// handle error
+}
+import
+io.milvus.v2.service.rbac.request.CreatePrivilegeGroupReq;
+
+client.createPrivilegeGroup(CreatePrivilegeGroupReq.builder()
+        .groupName(
+"privilege_group_1"
+)
+        .build());
+await
+client.
+createPrivilegeGroup
+({
+group_name
+:
+'privilege_group_1'
+,
+});
+curl --request POST \
+--url
+"
+${CLUSTER_ENDPOINT}
+/v2/vectordb/privilege_groups/create"
+\
+--header
+"Authorization: Bearer
+${TOKEN}
+"
+\
+--header
+"Content-Type: application/json"
+\
+-d
+'{
+    "privilegeGroupName":"privilege_group_1"
+}'
+向特权组添加权限
+下面的示例演示了如何将
+PrivilegeBackupRBAC
+和
+PrivilegeRestoreRBAC
+添加到刚刚创建的特权组
+privilege_group_1
+中。
+Python
+Go
+Java
+NodeJS
+cURL
+from
+pymilvus
+import
+MilvusClient
+client.add_privileges_to_group(group_name=
+'privilege_group_1'
+, privileges=[
+'Query'
+,
+'Search'
+])
+import
+"github.com/milvus-io/milvus/client/v2/milvusclient"
+privileges := []
+string
+{
+"Query"
+,
+"Search"
+}
+err = client.AddPrivilegesToGroup(ctx, milvusclient.NewAddPrivilegesToGroupOption(
+"privilege_group_1"
+, privileges...))
+if
+err !=
+nil
+{
+    fmt.Println(err.Error())
+// handle error
+}
+import
+io.milvus.v2.service.rbac.request.AddPrivilegesToGroupReq;
+
+client.addPrivilegesToGroup(AddPrivilegesToGroupReq.builder()
+        .groupName(
+"privilege_group_1"
+)
+        .privileges(Arrays.asList(
+"Query"
+,
+"Search"
+))
+        .build());
+await
+client.
+addPrivilegesToGroup
+({
+group_name
+: privilege_group_1,
+privileges
+: [
+'Query'
+,
+'Search'
+],
+});
+curl --request POST \
+--url
+"
+${CLUSTER_ENDPOINT}
+/v2/vectordb/privilege_groups/add_privileges_to_group"
+\
+--header
+"Authorization: Bearer
+${TOKEN}
+"
+\
+--header
+"Content-Type: application/json"
+\
+-d
+'{
+    "privilegeGroupName":"privilege_group_1",
+    "privileges":["Query", "Search"]
+}'
+从权限组中删除权限
+下面的示例演示了如何从权限组
+privilege_group_1
+中移除权限
+PrivilegeRestoreRBAC
+。
+Python
+Go
+Java
+NodeJS
+cURL
+from
+pymilvus
+import
+MilvusClient
+client.remove_privileges_from_group(group_name=
+'privilege_group_1'
+, privileges=
+'Search'
+)
+import
+"github.com/milvus-io/milvus/client/v2/milvusclient"
+err = client.RemovePrivilegesFromGroup(ctx, milvusclient.NewRemovePrivilegesFromGroupOption(
+"privilege_group_1"
+, []
+string
+{
+"Search"
+}...))
+if
+err !=
+nil
+{
+    fmt.Println(err.Error())
+// handle error
+}
+import
+io.milvus.v2.service.rbac.request.RemovePrivilegesFromGroupReq;
+
+client.removePrivilegesFromGroup(RemovePrivilegesFromGroupReq.builder()
+        .groupName(
+"privilege_group_1"
+)
+        .privileges(Collections.singletonList(
+"Search"
+))
+        .build());
+await
+client.
+removePrivilegesFromGroup
+({
+group_name
+:
+"privilege_group_1"
+,
+privileges
+: [
+"Search"
+],
+});
+curl --request POST \
+--url
+"
+${CLUSTER_ENDPOINT}
+/v2/vectordb/privilege_groups/remove_privileges_from_group"
+\
+--header
+"Authorization: Bearer
+${TOKEN}
+"
+\
+--header
+"Content-Type: application/json"
+\
+-d
+'{
+    "privilegeGroupName":"privilege_group_1",
+    "privileges":["Search"]
+}'
+列出特权组
+下面的示例演示了如何列出所有现有特权组。
+Python
+Go
+Java
+NodeJS
+cURL
+from
+pymilvus
+import
+MilvusClient
+client.list_privilege_groups()
+import
+"github.com/milvus-io/milvus/client/v2/milvusclient"
+groups, err := client.ListPrivilegeGroups(ctx, milvusclient.NewListPrivilegeGroupsOption())
+if
+err !=
+nil
+{
+    fmt.Println(err.Error())
+// handle error
+}
+import
+io.milvus.v2.service.rbac.PrivilegeGroup;
+import
+io.milvus.v2.service.rbac.request.ListPrivilegeGroupsReq;
+import
+io.milvus.v2.service.rbac.response.ListPrivilegeGroupsResp;
+ListPrivilegeGroupsResp
+resp
+=
+client.listPrivilegeGroups(ListPrivilegeGroupsReq.builder()
+        .build());
+List<PrivilegeGroup> groups = resp.getPrivilegeGroups();
+await
+client.
+listPrivilegeGroups
+();
+curl --request POST \
+--url
+"
+${CLUSTER_ENDPOINT}
+/v2/vectordb/privilege_groups/list"
+\
+--header
+"Authorization: Bearer
+${TOKEN}
+"
+\
+--header
+"Content-Type: application/json"
+\
+-d
+'{}'
+下面是一个输出示例。
+PrivilegeGroupItem: <privilege_group:privilege_group_1>, <privileges:(
+'Search'
+,
+'Query'
+)>
+删除权限组
+下面的示例演示了如何删除
+privilege_group_1
+特权组。
+Python
+Go
+Java
+NodeJS
+cURL
+from
+pymilvus
+import
+MilvusClient
+client.drop_privilege_group(group_name=
+'privilege_group_1'
+)
+import
+"github.com/milvus-io/milvus/client/v2/milvusclient"
+err = client.DropPrivilegeGroup(ctx, milvusclient.NewDropPrivilegeGroupOption(
+"privilege_group_1"
+))
+if
+err !=
+nil
+{
+    fmt.Println(err.Error())
+// handle error
+}
+import
+io.milvus.v2.service.rbac.request.DropPrivilegeGroupReq;
+
+client.dropPrivilegeGroup(DropPrivilegeGroupReq.builder()
+        .groupName(
+"privilege_group_1"
+)
+        .build());
+await
+client.
+dropPrivilegeGroup
+({
+group_name
+:
+'privilege_group_1'
+});
+curl --request POST \
+--url
+"
+${CLUSTER_ENDPOINT}
+/v2/vectordb/privilege_groups/drop"
+\
+--header
+"Authorization: Bearer
+${TOKEN}
+"
+\
+--header
+"Content-Type: application/json"
+\
+-d
+'{
+    "privilegeGroupName":"privilege_group_1"
+}'

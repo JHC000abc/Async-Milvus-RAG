@@ -1,0 +1,542 @@
+指数衰减
+Compatible with Milvus 2.6.x
+指数衰减会使搜索结果在最初出现急剧下降，随后出现长尾。就像突发新闻周期一样，一开始相关性会迅速降低，但随着时间的推移，一些新闻的重要性会保持不变，指数衰减会对超出您理想范围的条目施加急剧的惩罚，同时仍然保持远距离条目的可发现性。当你想优先考虑近似性或近期性，但又不想完全排除较远的选项时，这种方法是理想的选择。
+与其他衰减函数不同：
+高斯衰减会产生更渐进的钟形衰减
+线性衰减以恒定的速度递减，直到刚好为零
+指数衰减是一种独特的 "前置 "惩罚，在早期应用大部分相关性降低，同时保持相关性最小但不为零的长尾。
+何时使用指数衰减
+指数衰减对以下情况特别有效
+使用案例
+示例
+为什么指数效果好
+新闻源
+即时新闻门户网站
+快速降低旧新闻的相关性，同时仍显示几天前的重要新闻
+社交媒体时间线
+活动推送、状态更新
+强调新鲜内容，但允许病毒性旧内容出现
+通知系统
+警报优先级
+为最近的警报创造紧迫感，同时保持重要警报的可见性
+闪购
+限时优惠
+随着最后期限的临近迅速降低可见度
+在以下情况下选择指数衰减
+用户希望最近或附近的项目在搜索结果中占主导地位
+较旧或较远的项目如果特别相关，仍应可被发现
+相关性下降应该是前负荷的（开始时较陡，之后较缓）
+急剧下降原则
+指数衰减会产生一条曲线，一开始迅速下降，然后逐渐变平，形成一个长尾，接近但永远不会归零。这种数学模式经常出现在自然现象中，如放射性衰减、人口减少和信息随时间的相关性。
+所有时间参数 (
+origin
+,
+offset
+,
+scale
+) 必须使用与 Collections 数据相同的单位。如果您的 Collections 以不同的单位（毫秒、微秒）存储时间戳，请相应调整所有参数。
+指数衰减
+上图显示了指数衰减对数字新闻平台中新闻文章排名的影响：
+origin
+(当前时间）：当前时刻，相关性最大（1.0）。
+offset
+(3小时）：突发新闻窗口"--在过去 3 小时内发布的所有新闻都保持满分相关性（1.0），确保最近的新闻不会因为微小的时间差而受到不必要的惩罚。
+decay
+(0.5):尺度距离上的得分--该参数控制得分随时间减少的程度。
+scale
+(24小时）：相关性下降到衰减值的时间段--24 小时前的新闻相关性得分减半 (0.5)。
+从曲线中可以看出，超过 24 小时的新闻文章相关性持续下降，但从未达到零。即使是几天前的新闻也能保持最低的相关性，使重要但较旧的新闻仍能出现在您的 feed 中（尽管排名较低）。
+这种行为模仿了新闻相关性的典型运作方式--非常新的新闻占据主导地位，但重要的旧新闻如果与用户的兴趣特别相关，仍然可以突围而出。
+计算公式
+计算指数衰减得分的数学公式为
+S
+(
+d
+o
+c
+)
+=
+exp
+⁡
+(
+λ
+⋅
+max
+⁡
+(
+0
+,
+∣
+f
+i
+e
+l
+d
+v
+a
+l
+u
+e
+d
+o
+c
+−
+o
+r
+i
+g
+i
+n
+∣
+−
+o
+f
+f
+s
+e
+t
+)
+)
+S(doc) = \exp\left( \lambda \cdot \max\left(0, \left|fieldvalue_{doc} - origin\right| - offset \right) \right)
+S
+(
+d
+oc
+)
+=
+exp
+(
+λ
+⋅
+max
+(
+0
+,
+∣
+f
+i
+e
+l
+d
+v
+a
+l
+u
+e
+d
+oc
+−
+or
+i
+g
+in
+∣
+−
+o
+ff
+se
+t
+)
+)
+其中：
+λ
+=
+ln
+⁡
+(
+d
+e
+c
+a
+y
+)
+s
+c
+a
+l
+e
+\lambda = \frac{\ln(decay)}{scale}
+λ
+=
+sc
+a
+l
+e
+ln
+(
+d
+ec
+a
+y
+)
+用通俗易懂的语言来解释：
+计算字段值距离原点的距离：
+∣fieldvaluedoc-origin∣|fieldvalue_{doc}
+- origin|
+∣fieldvalue
+doc
+-
+origin
+∣。
+减去偏移量（如果有的话），但不要低于零：
+max
+(
+0
+,
+distance-
+offset
+)
+\max
+(
+0
+,
+distance
+-
+offset
+)
+max
+(
+0
+,
+distance
+-
+offset
+)
+。
+乘以
+λ\lambda
+λ
+，这是根据你的比例和衰减参数计算出来的。
+取指数，得出介于 0 和 1 之间的值：
+exp
+(
+λ⋅
+value
+)
+\exp
+(
+\
+lambda \cdot
+value
+)
+exp
+(
+λ
+⋅
+value
+)
+。
+λ
+λ
+计算将规模和衰变参数转换为指数函数的速率参数。更负的
+λλλ
+λ
+会产生更陡峭的初始下降。
+使用指数衰减
+指数衰减可应用于 Milvus 中的标准向量搜索和混合搜索操作符。下面是实现这一功能的关键代码片段。
+在使用衰减函数之前，必须先创建一个带有适当数值字段（如时间戳、距离等）的 Collections，这些数值字段将用于衰减计算。有关包括集合设置、Schema 定义和数据插入在内的完整工作示例，请参阅《
+衰减排名器教程》
+。
+创建衰减排名器
+用数字字段（本例中为
+publish_time
+）设置好 Collections 后，创建指数衰减排序器：
+时间单位一致性
+：使用基于时间的衰减时，请确保
+origin
+、
+scale
+和
+offset
+参数与您的 Collections 数据使用相同的时间单位。如果您的 Collections 以秒为单位存储时间戳，则所有参数都使用秒。如果使用毫秒，则所有参数都使用毫秒。
+Python
+Java
+NodeJS
+Go
+cURL
+from
+pymilvus
+import
+Function, FunctionType
+import
+datetime
+# Create an exponential decay ranker for news recency
+# Note: All time parameters must use the same unit as your collection data
+ranker = Function(
+    name=
+"news_recency"
+,
+# Function identifier
+input_field_names=[
+"publish_time"
+],
+# Numeric field to use
+function_type=FunctionType.RERANK,
+# Function type. Must be RERANK
+params={
+"reranker"
+:
+"decay"
+,
+# Specify decay reranker
+"function"
+:
+"exp"
+,
+# Choose exponential decay
+"origin"
+:
+int
+(datetime.datetime.now().timestamp()),
+# Current time (seconds, matching collection data)
+"offset"
+:
+3
+*
+60
+*
+60
+,
+# 3 hour breaking news window (seconds)
+"decay"
+:
+0.5
+,
+# Half score at scale distance
+"scale"
+:
+24
+*
+60
+*
+60
+# 24 hours (in seconds, matching collection data)
+}
+)
+import
+io.milvus.v2.service.vector.request.ranker.DecayRanker;
+DecayRanker
+ranker
+=
+DecayRanker.builder()
+        .name(
+"news_recency"
+)
+        .inputFieldNames(Collections.singletonList(
+"publish_time"
+))
+        .function(
+"exp"
+)
+        .origin(System.currentTimeMillis())
+        .offset(
+3
+*
+60
+*
+60
+)
+        .decay(
+0.5
+)
+        .scale(
+24
+*
+60
+*
+60
+)
+        .build();
+import
+{
+FunctionType
+}
+from
+"@zilliz/milvus2-sdk-node"
+;
+const
+ranker = {
+name
+:
+"news_recency"
+,
+input_field_names
+: [
+"publish_time"
+],
+type
+:
+FunctionType
+.
+RERANK
+,
+params
+: {
+reranker
+:
+"decay"
+,
+function
+:
+"exp"
+,
+origin
+:
+new
+Date
+(
+2025
+,
+1
+,
+15
+).
+getTime
+(),
+offset
+:
+3
+*
+60
+*
+60
+,
+decay
+:
+0.5
+,
+scale
+:
+24
+*
+60
+*
+60
+,
+  },
+};
+// go
+# restful
+应用于标准向量搜索
+定义衰减排序器后，您可以通过将其传递给
+ranker
+参数，在搜索操作过程中应用它：
+Python
+Java
+NodeJS
+Go
+cURL
+# Apply decay ranker to vector search
+result = milvus_client.search(
+    collection_name,
+    data=[your_query_vector],
+# Replace with your query vector
+anns_field=
+"dense"
+,
+# Vector field to search
+limit=
+10
+,
+# Number of results
+output_fields=[
+"title"
+,
+"publish_time"
+],
+# Fields to return
+ranker=ranker,
+# Apply the decay ranker
+consistency_level=
+"Strong"
+)
+import
+io.milvus.v2.common.ConsistencyLevel;
+import
+io.milvus.v2.service.vector.request.SearchReq;
+import
+io.milvus.v2.service.vector.response.SearchResp;
+import
+io.milvus.v2.service.vector.request.data.EmbeddedText;
+SearchReq
+searchReq
+=
+SearchReq.builder()
+        .collectionName(COLLECTION_NAME)
+        .data(Collections.singletonList(
+new
+EmbeddedText
+(
+"market analysis"
+)))
+        .annsField(
+"vector_field"
+)
+        .limit(
+10
+)
+        .outputFields(Arrays.asList(
+"title"
+,
+"publish_time"
+))
+        .functionScore(FunctionScore.builder()
+                .addFunction(ranker)
+                .build())
+        .consistencyLevel(ConsistencyLevel.STRONG)
+        .build();
+SearchResp
+searchResp
+=
+client.search(searchReq);
+import
+{
+FunctionType
+MilvusClient
+}
+from
+"@zilliz/milvus2-sdk-node"
+;
+const
+milvusClient =
+new
+MilvusClient
+(
+"http://localhost:19530"
+);
+const
+result =
+await
+milvusClient.
+search
+({
+collection_name
+:
+"collection_name"
+,
+data
+: [your_query_vector],
+// Replace with your query vector
+anns_field
+:
+"dense"
+,
+limit
+:
+10
+,
+output_fields
+: [
+"title"
+,
+"publish_time"
+],
+rerank
+: ranker,
+consistency_level
+:
+"Strong"
+,
+});
+// go
+# restful

@@ -1,0 +1,494 @@
+高斯衰减
+Compatible with Milvus 2.6.x
+高斯衰减也称为正常衰减，它能对搜索结果进行最自然的调整。就像人的视力会随着距离的增加而逐渐模糊一样，高斯衰减会创建一条平滑的钟形曲线，随着条目远离您的理想点，相关性会逐渐降低。这种方法非常适合您需要一种平衡的衰减方式，既不会对您偏好范围之外的项目造成严重影响，又能显著降低远处项目的相关性。
+与其他衰减排名器不同：
+指数衰减一开始会急剧下降，从而产生较强的初始惩罚效果
+线性衰减以恒定的速度递减，直至为零，形成一个清晰的分界线
+高斯衰减提供了一种更平衡、更直观的方法，让用户感觉很自然。
+何时使用高斯衰减
+高斯衰减对以下情况特别有效
+使用案例
+实例
+为什么高斯衰减效果好
+基于位置的搜索
+餐厅搜索器、商店定位器
+模仿人类对距离相关性的自然感知
+内容推荐
+基于出版日期的文章建议
+随着内容老化，相关性逐渐下降
+产品列表
+价格接近目标的商品
+价格偏离目标时相关性平稳下降
+专业知识匹配
+寻找具有相关经验的专业人士
+平衡评估经验相关性
+如果您的应用需要相关性自然下降的感觉，而不需要严厉的惩罚或严格的截止条件，那么高斯衰减可能是您的最佳选择。
+钟形曲线原理
+高斯衰减会形成一条平滑的钟形曲线，随着与理想点的距离增加，相关性会逐渐降低。这种分布以数学家卡尔-弗里德里希-高斯（Carl Friedrich Gauss）的名字命名，经常出现在自然界和统计学中，这也解释了为什么人类对它有如此直观的感觉。
+高斯衰减
+上图显示了高斯衰减如何影响移动搜索应用程序中的餐厅排名：
+origin
+(0公里）：您的当前位置，相关性最大 (1.0)。
+offset
+(±300 m):您周围的 "满分区"--300 米内的所有餐厅都保持满分（1.0），确保附近的餐厅不会因为微小的距离差异而受到不必要的惩罚。
+scale
+(±2公里）：相关性下降到衰减值的距离--2 公里外的餐厅相关性得分减半（0.5）。
+decay
+(0.5):刻度距离上的分数--该参数主要控制分数随距离减小的速度。
+从曲线上可以看出，超过 2 公里的餐厅相关性会继续降低，但不会完全归零。即使是 4-5 公里以外的餐厅，也能保持最低限度的相关性，使优秀但距离较远的餐厅仍能出现在您的搜索结果中（尽管排名较低）。
+这种行为模仿了人们对距离相关性的自然思维方式--附近的地方是首选，但我们愿意去更远的地方寻找特别的选择。
+计算公式
+计算高斯衰减得分的数学公式为
+S
+(
+d
+o
+c
+)
+=
+exp
+⁡
+(
+−
+(
+max
+⁡
+(
+0
+,
+∣
+f
+i
+e
+l
+d
+v
+a
+l
+u
+e
+d
+o
+c
+−
+o
+r
+i
+g
+i
+n
+∣
+−
+o
+f
+f
+s
+e
+t
+)
+)
+2
+2
+σ
+2
+)
+S(doc) = \exp\left( -\frac{\left( \max\left(0, \left|fieldvalue_{doc} - origin\right| - offset \right) \right)^2}{2\sigma^2} \right)
+S
+(
+d
+oc
+)
+=
+exp
+(
+−
+2
+σ
+2
+(
+max
+(
+0
+,
+∣
+f
+i
+e
+l
+d
+v
+a
+l
+u
+e
+d
+oc
+−
+or
+i
+g
+in
+∣
+−
+o
+ff
+se
+t
+)
+)
+2
+)
+其中：
+σ
+2
+=
+−
+s
+c
+a
+l
+e
+2
+2
+⋅
+ln
+⁡
+(
+d
+e
+c
+a
+y
+)
+\sigma^2 = -\frac{scale^2}{2 \cdot \ln(decay)}
+σ
+2
+=
+−
+2
+⋅
+ln
+(
+d
+ec
+a
+y
+)
+sc
+a
+l
+e
+2
+用通俗易懂的语言来解释：
+计算字段值距离原点的距离：
+∣fieldvaluedoc-origin∣|fieldvalue_{doc}
+- origin|
+∣fieldvalue
+doc
+-
+origin∣
+减去偏移量（如果有的话），但不要低于零：
+max
+(
+0
+,
+distance-offset
+)\max
+(0, distance - offset)
+max
+(
+0
+,
+distance
+-
+offset
+)
+将调整后的距离平方：
+(
+adjusted_distance
+)
+2
+(adjusted\_distance)^2
+(
+adjusted_distance
+)
+2
+除以
+2σ22\sigma^2
+2σ
+2，这是根据你的比例和衰减参数计算出来的。
+取负指数，得到介于 0 和 1 之间的值：
+exp
+(
+-
+value
+)
+\exp
+(-
+value
+)
+exp
+(
+-val
+ue
+)
+σ2\sigma^{2}
+σ
+2 计算将规模和衰减参数转换为高斯分布的标准差平方。这就是该函数的钟形特征。
+使用高斯衰减
+高斯衰减可应用于 Milvus 中的标准向量搜索和混合搜索操作符。以下是实现这一功能的关键代码片段。
+在使用衰减函数之前，必须先创建一个带有适当数值字段（如时间戳、距离等）的 Collection，这些数值字段将用于衰减计算。有关包括集合设置、Schema 定义和数据插入在内的完整工作示例，请参阅
+教程：在 Milvus 中实施基于时间的排名
+。
+创建衰减排名器
+在用数值字段（在本例中，
+distance
+，单位为距离用户的米）设置好您的 Collections 后，创建一个高斯衰减排名器：
+Python
+Java
+NodeJS
+Go
+cURL
+from
+pymilvus
+import
+Function, FunctionType
+# Create a Gaussian decay ranker for location-based restaurant search
+ranker = Function(
+    name=
+"restaurant_distance_decay"
+,
+# Function identifier
+input_field_names=[
+"distance"
+],
+# Numeric field for distance in meters
+function_type=FunctionType.RERANK,
+# Function type. Must be RERANK
+params={
+"reranker"
+:
+"decay"
+,
+# Specify decay reranker
+"function"
+:
+"gauss"
+,
+# Choose Gaussian decay
+"origin"
+:
+0
+,
+# Your current location (0 meters)
+"offset"
+:
+300
+,
+# 300m no-decay zone
+"decay"
+:
+0.5
+,
+# Half score at scale distance
+"scale"
+:
+2000
+# 2 km scale (2000 meters)
+}
+)
+import
+io.milvus.v2.service.vector.request.ranker.DecayRanker;
+DecayRanker
+ranker
+=
+DecayRanker.builder()
+        .name(
+"restaurant_distance_decay"
+)
+        .inputFieldNames(Collections.singletonList(
+"distance"
+))
+        .function(
+"gauss"
+)
+        .origin(
+0
+)
+        .offset(
+300
+)
+        .decay(
+0.5
+)
+        .scale(
+2000
+)
+        .build();
+import
+{
+FunctionType
+}
+from
+"@zilliz/milvus2-sdk-node"
+;
+const
+ranker = {
+name
+:
+"restaurant_distance_decay"
+,
+input_field_names
+: [
+"distance"
+],
+function_type
+:
+FunctionType
+.
+RERANK
+,
+params
+: {
+reranker
+:
+"decay"
+,
+function
+:
+"gauss"
+,
+origin
+:
+0
+,
+offset
+:
+300
+,
+decay
+:
+0.5
+,
+scale
+:
+2000
+,
+  },
+};
+// go
+# restful
+应用于标准向量搜索
+定义完衰减排序器后，您可以通过将其传递给
+ranker
+参数，在搜索操作过程中应用它：
+Python
+Java
+NodeJS
+Go
+cURL
+# Apply decay ranker to restaurant vector search
+result = milvus_client.search(
+    collection_name,
+    data=[your_query_vector],
+# Replace with your query vector
+anns_field=
+"dense"
+,
+# Vector field to search
+limit=
+10
+,
+# Number of results
+output_fields=[
+"name"
+,
+"cuisine"
+,
+"distance"
+],
+# Fields to return
+ranker=ranker,
+# Apply the decay ranker
+consistency_level=
+"Strong"
+)
+import
+io.milvus.v2.common.ConsistencyLevel;
+import
+io.milvus.v2.service.vector.request.SearchReq;
+import
+io.milvus.v2.service.vector.response.SearchResp;
+import
+io.milvus.v2.service.vector.request.data.EmbeddedText;
+SearchReq
+searchReq
+=
+SearchReq.builder()
+        .collectionName(COLLECTION_NAME)
+        .data(Collections.singletonList(
+new
+EmbeddedText
+(
+"italian restaurants"
+)))
+        .annsField(
+"vector_field"
+)
+        .limit(
+10
+)
+        .outputFields(Arrays.asList(
+"name"
+,
+"cuisine"
+,
+"distance"
+))
+        .functionScore(FunctionScore.builder()
+                .addFunction(ranker)
+                .build())
+        .consistencyLevel(ConsistencyLevel.STRONG)
+        .build();
+SearchResp
+searchResp
+=
+client.search(searchReq);
+const
+result =
+await
+milvusClient.
+search
+({
+collection_name
+:
+"collection_name"
+,
+data
+: [your_query_vector],
+// Replace with your query vector
+anns_field
+:
+"dense"
+,
+limit
+:
+10
+,
+output_fields
+: [
+"name"
+,
+"cuisine"
+,
+"distance"
+],
+rerank
+: ranker,
+consistency_level
+:
+"Strong"
+,
+});
+// go
+# restful

@@ -1,0 +1,532 @@
+线性衰减
+Compatible with Milvus 2.6.x
+线性衰减会在搜索结果中创建一个以绝对零点为终点的直线下降。就像即将发生的事件倒计时一样，相关性会逐渐减弱，直到事件过去，线性衰减会随着项目远离您的理想点而使相关性可预测地稳步降低，直到完全消失。这种方法非常适合在需要一致的衰减率和明确的分界线时使用，可确保超出一定界限的项目完全被排除在搜索结果之外。
+与其他衰减函数不同：
+高斯衰减遵循钟形曲线，逐渐接近但永远不会归零
+指数衰减会保持一个相关性最小的长尾，并无限延伸
+线性衰减能独特地创建一个确定的终点，因此对于有自然边界或截止日期的应用特别有效。
+何时使用线性衰减
+线性衰减对以下应用特别有效
+使用案例
+实例
+为什么线性效果好
+活动列表
+音乐会门票平台
+为太遥远的未来活动创建明确的分界线
+限时优惠
+闪购、促销
+确保过期或即将过期的优惠不会出现
+送货半径
+送餐、快递服务
+执行严格的地理界限
+限制年龄的内容
+约会平台、媒体服务
+设定明确的年龄界限
+在以下情况下选择线性衰减
+您的应用程序有自然边界、截止日期或阈值
+应将超过某一点的项目完全排除在结果之外
+您需要可预测的、一致的相关性下降率
+用户应该清楚地看到相关和不相关项目之间的界限
+稳步下降原则
+线性衰减是指以恒定的速度直线下降，直至降到零。这种模式出现在许多日常场景中，如倒计时计时器、库存消耗和截止日期临近等，在这些场景中，相关性都有一个明确的到期点。
+所有时间参数（
+origin
+,
+offset
+,
+scale
+）必须使用与 Collections 数据相同的单位。如果您的 Collections 以不同的单位（毫秒、微秒）存储时间戳，请相应调整所有参数。
+线性衰减
+上图显示了线性衰减如何影响票务平台上的活动列表：
+origin
+(当前日期）：当前时刻，相关性达到最大值 (1.0)。
+offset
+(1天）：即时事件窗口"--所有在第二天内发生的事件都能保持满分相关性分数（1.0），确保即将发生的事件不会因为微小的时间差而受到影响。
+decay
+(0.5):尺度距离得分--该参数控制相关性下降的速度。
+scale
+(10天）：相关性下降到衰减值的时间段--10 天后的事件相关性得分减半（0.5）。
+从直线曲线中可以看出，超过大约 16 天的事件相关性正好为零，根本不会出现在搜索结果中。这就形成了一个明确的界限，确保用户只能在规定的时间窗口内看到相关的即将发生的事件。
+这种行为反映了活动计划的典型运作方式--近期的活动最相关，未来几周内的活动重要性递减，而太远（或已经过去）的活动则根本不应该出现。
+计算公式
+计算线性衰减分数的数学公式为
+S
+(
+d
+o
+c
+)
+=
+max
+⁡
+(
+s
+−
+max
+⁡
+(
+0
+,
+∣
+f
+i
+e
+l
+d
+v
+a
+l
+u
+e
+d
+o
+c
+−
+o
+r
+i
+g
+i
+n
+∣
+−
+o
+f
+f
+s
+e
+t
+)
+s
+,
+0
+)
+S(doc) = \max\left( \frac{s - \max(0, |fieldvalue_{doc} - origin| - offset)}{s}, 0 \right)
+S
+(
+d
+oc
+)
+=
+max
+(
+s
+s
+−
+max
+(
+0
+,
+∣
+f
+i
+e
+l
+d
+v
+a
+l
+u
+e
+d
+oc
+−
+or
+i
+g
+in
+∣
+−
+o
+ff
+se
+t
+)
+,
+0
+)
+其中：
+s
+=
+s
+c
+a
+l
+e
+(
+1.0
+−
+d
+e
+c
+a
+y
+)
+s = \frac{scale}{(1.0 - decay)}
+s
+=
+(
+1.0
+−
+d
+ec
+a
+y
+)
+sc
+a
+l
+e
+用通俗易懂的语言来解释：
+计算字段值距离原点的距离：
+∣fieldvaluedoc-origin∣|fieldvalue_{doc}
+- origin|
+∣fieldvalue
+doc
+-
+origin∣
+减去偏移量（如果有的话），但不要低于零：
+max
+(
+0
+,
+distance-offset
+)\max
+(0, distance - offset)
+max
+(
+0
+,
+distance
+-
+offset
+)
+根据缩放和衰减值确定参数
+ss
+s。
+从
+ss
+s 减去调整后的距离，再除以
+ss
+s
+确保结果永远不低于零：
+max
+(
+result
+,
+0
+)\max
+(result, 0)
+max
+(
+result
+,
+0
+)
+ss
+s 计算将缩放和衰减参数转换为分数为零的点。例如，如果衰减值=0.5，缩放值=7，那么在距离=14（缩放值的两倍）处得分将正好为零。
+使用线性衰减
+线性衰减可应用于 Milvus 中的标准向量搜索和混合搜索操作符。下面是实现这一功能的关键代码片段。
+在使用衰减函数之前，必须先创建一个带有适当数值字段（如时间戳、距离等）的 Collection，这些数值字段将用于衰减计算。有关包括集合设置、Schema 定义和数据插入在内的完整工作示例，请参阅《
+衰减排名器教程》
+。
+创建衰减排名器
+在使用数字字段（在本例中，
+event_date
+，即从现在开始的秒）设置好您的 Collections 后，创建一个线性衰减排序器：
+时间单位一致性
+：使用基于时间的衰减时，请确保
+origin
+、
+scale
+和
+offset
+参数与您的 Collections 数据使用相同的时间单位。如果您的 Collections 以秒为单位存储时间戳，则所有参数都使用秒。如果使用毫秒，则所有参数都使用毫秒。
+Python
+Java
+NodeJS
+Go
+cURL
+from
+pymilvus
+import
+Function, FunctionType
+import
+time
+# Calculate current time
+current_time =
+int
+(time.time())
+# Create a linear decay ranker for event listings
+# Note: All time parameters must use the same unit as your collection data
+ranker = Function(
+    name=
+"event_relevance"
+,
+# Function identifier
+input_field_names=[
+"event_date"
+],
+# Numeric field to use
+function_type=FunctionType.RERANK,
+# Function type. Must be RERANK
+params={
+"reranker"
+:
+"decay"
+,
+# Specify decay reranker
+"function"
+:
+"linear"
+,
+# Choose linear decay
+"origin"
+: current_time,
+# Current time (seconds, matching collection data)
+"offset"
+:
+12
+*
+60
+*
+60
+,
+# 12 hour immediate events window (seconds)
+"decay"
+:
+0.5
+,
+# Half score at scale distance
+"scale"
+:
+7
+*
+24
+*
+60
+*
+60
+# 7 days (in seconds, matching collection data)
+}
+)
+import
+io.milvus.v2.service.vector.request.ranker.DecayRanker;
+DecayRanker
+ranker
+=
+DecayRanker.builder()
+        .name(
+"event_relevance"
+)
+        .inputFieldNames(Collections.singletonList(
+"event_date"
+))
+        .function(
+"linear"
+)
+        .origin(System.currentTimeMillis())
+        .offset(
+12
+*
+60
+*
+60
+)
+        .decay(
+0.5
+)
+        .scale(
+7
+*
+24
+*
+60
+*
+60
+)
+        .build();
+import
+{
+FunctionType
+}
+from
+"@zilliz/milvus2-sdk-node"
+;
+const
+ranker = {
+name
+:
+"event_relevance"
+,
+input_field_names
+: [
+"event_date"
+],
+type
+:
+FunctionType
+.
+RERANK
+,
+params
+: {
+reranker
+:
+"decay"
+,
+function
+:
+"linear"
+,
+origin
+:
+new
+Date
+(
+2025
+,
+1
+,
+15
+).
+getTime
+(),
+offset
+:
+12
+*
+60
+*
+60
+,
+decay
+:
+0.5
+,
+scale
+:
+7
+*
+24
+*
+60
+*
+60
+,
+  },
+};
+// go
+# restful
+应用于标准向量搜索
+定义衰减排序器后，您可以通过将其传递给
+ranker
+参数，在搜索操作过程中应用它：
+Python
+Java
+NodeJS
+Go
+cURL
+# Apply decay ranker to vector search
+result = milvus_client.search(
+    collection_name,
+    data=[your_query_vector],
+# Replace with your query vector
+anns_field=
+"dense"
+,
+# Vector field to search
+limit=
+10
+,
+# Number of results
+output_fields=[
+"title"
+,
+"venue"
+,
+"event_date"
+],
+# Fields to return
+ranker=ranker,
+# Apply the decay ranker
+consistency_level=
+"Strong"
+)
+import
+io.milvus.v2.common.ConsistencyLevel;
+import
+io.milvus.v2.service.vector.request.SearchReq;
+import
+io.milvus.v2.service.vector.response.SearchResp;
+import
+io.milvus.v2.service.vector.request.data.FloatVec;
+SearchReq
+searchReq
+=
+SearchReq.builder()
+        .collectionName(COLLECTION_NAME)
+        .data(Collections.singletonList(
+new
+FloatVec
+(embedding)))
+        .annsField(
+"dense"
+)
+        .limit(
+10
+)
+        .outputFields(Arrays.asList(
+"title"
+,
+"venue"
+,
+"event_date"
+))
+        .functionScore(FunctionScore.builder()
+                .addFunction(ranker)
+                .build())
+        .consistencyLevel(ConsistencyLevel.STRONG)
+        .build();
+SearchResp
+searchResp
+=
+client.search(searchReq);
+const
+result =
+await
+milvusClient.
+search
+({
+collection_name
+:
+"collection_name"
+,
+data
+: [your_query_vector],
+// Replace with your query vector
+anns_field
+:
+"dense"
+,
+limit
+:
+10
+,
+output_fields
+: [
+"title"
+,
+"venue"
+,
+"event_date"
+],
+rerank
+: ranker,
+consistency_level
+:
+"Strong"
+,
+});
+// go
+# restful

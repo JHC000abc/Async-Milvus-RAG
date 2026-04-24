@@ -1,0 +1,6 @@
+索引相关配置
+indexCoord.segment.minSegmentNumRowsToEnableIndex
+说明
+默认值
+这是一个阈值。当分段行数小于此值时，将不对该分段进行索引
+1024

@@ -1,0 +1,54 @@
+Milvus:
+  type: "milvus"
+  uri: "http://172.17.0.1:19530"
+
+Embedding:
+  type: "ollama"
+  model: "embeddinggemma:latest"
+  base_url: "http://172.17.0.1:11434"
+
+CLIP:
+  url: "http://172.17.0.1:8001/api/v1/embedding/image"
+  dimension: 1024
+
+
+Normal:
+  batch_size: 100
+  chat_batch_size: 10
+  #  docs_path: "/home/jhc/Projects/Python/Crawler/mds"
+  docs_path: "/home/jhc/Projects/Python/ai/rag/milvue_stand/test/mds"
+  doc_chunk_size: 1000
+  doc_chunk_overlap: 100
+
+LLM:
+  url: "http://172.17.0.1:11434/v1"
+  api_key: "ollama"
+  ai_model: "deepseek-v3.2:cloud"
+  memory_size: 20
+  limit_loop_num: 5
+  system: |
+    你是一个知识助手，能够基于用户给到的提示，以及知识库搜索得到的数据，自动分析并结合知识库搜索结果中的权重，构建符合用户要求的返回结果，并且回复格式参照如下格式
+    {"question":"","knowledge":"","response":""}
+    字段解释：
+        question:用户问题
+        knowledge:知识库检索结果,如果没有可以是空字符串
+        response:ai整合用户问题和知识库检索结果生成的最终结论，如果没有可以是空字符串
+    所有回复必须用中文
+
+Reranker:
+  BGE:
+    host: "172.17.0.1"
+    port: 7997
+    model: "BAAI/bge-reranker-v2-m3"
+  JiNa:
+    host: "172.17.0.1"
+    port: 7998
+    model: "jinaai/jina-reranker-v2-base-multilingual"
+
+
+Mysql:
+  host: "172.17.0.1"
+  port: 3306
+  user: "root"
+  password: "123456"
+  db: "rag"
