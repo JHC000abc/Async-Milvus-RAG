@@ -69,8 +69,13 @@ class GenAnswer(RAGPipeline):
         """
         schema = self.client_db.create_schema()
         schema.add_field("id", DataType.INT64, auto_id=True, is_primary=True)
-        schema.add_field("question", DataType.VARCHAR, max_length=1000, enable_analyzer=True)
-        schema.add_field("answer", DataType.VARCHAR, max_length=5000, enable_analyzer=True)
+        chinese_analyzer = {
+            "type": "chinese"
+        }
+        schema.add_field("question", DataType.VARCHAR, max_length=1000, enable_analyzer=True,
+                         analyzer_params=chinese_analyzer, enable_match=True)
+        schema.add_field("answer", DataType.VARCHAR, max_length=5000, enable_analyzer=True,
+                         analyzer_params=chinese_analyzer, enable_match=True)
         schema.add_field("question_dense", DataType.FLOAT_VECTOR, dim=self.embedding_clip.dimension)
         schema.add_field("answer_dense", DataType.FLOAT_VECTOR, dim=self.embedding_clip.dimension)
         schema.add_field("question_sparse", DataType.SPARSE_FLOAT_VECTOR, is_function_output=True)
@@ -93,6 +98,8 @@ class GenAnswer(RAGPipeline):
         schema.add_function(bm25_function_answer)
 
         index_params = self.client_db.prepare_index_params()
+        index_params.add_index(field_name="question", index_name="question_txt_idx", index_type="INVERTED")
+        index_params.add_index(field_name="answer", index_name="answer_txt_idx", index_type="INVERTED")
         index_params.add_index(field_name="question_dense", index_name="question_idx", index_type="AUTOINDEX",
                                metric_type="IP")
         index_params.add_index(field_name="answer_dense", index_name="answer_idx", index_type="AUTOINDEX",
@@ -188,9 +195,18 @@ class GenAnswer(RAGPipeline):
         """
         collection_name = "qa"
         # await self.create_qa(collection_name)
-        # await self.create_qa(collection_name)
-        query = "异步"
-        await self.search(collection_name, query=query)
+        # await self.insert_data(collection_name)
+
+        # 等待数据加载
+        await asyncio.sleep(3)
+
+        query = "核心概念"
+        q_res = await self.client_db.query(collection_name, filter=f"TEXT_MATCH(question, '{query}')",
+                                           output_fields=["question"])
+        print(q_res)
+
+        s_res=  await self.search(collection_name, query=query)
+        print(s_res)
 
 
 if __name__ == '__main__':
